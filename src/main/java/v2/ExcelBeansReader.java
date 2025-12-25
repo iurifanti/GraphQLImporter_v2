@@ -54,7 +54,7 @@ public class ExcelBeansReader {
                     Cell cell = row.getCell(i);
                     if (cell != null) {
                         Header header = i < headers.size() ? headers.get(i) : new Header("");
-                        String value = dataFormatter.formatCellValue(cell, evaluator);
+                        String value = readCellAsString(cell, evaluator);
                         cells.add(new DataCell(header, cell, value));
                     }
                 }
