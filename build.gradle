@@ -35,9 +35,9 @@ dependencies {
     implementation 'org.apache.poi:poi-ooxml-lite:5.2.5'
 
     // Log4j 2 (API + core implementation)
-    //implementation platform('org.apache.logging.log4j:log4j-bom:2.25.0')
-    //implementation 'org.apache.logging.log4j:log4j-api:+'
-    //implementation 'org.apache.logging.log4j:log4j-core:+'
+    implementation platform('org.apache.logging.log4j:log4j-bom:2.24.0')
+    implementation 'org.apache.logging.log4j:log4j-api:2.24.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.24.0'
 
     // Jackson
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
