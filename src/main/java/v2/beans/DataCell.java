@@ -5,7 +5,6 @@
  */
 package v2.beans;
 
-import org.apache.poi.ss.usermodel.Cell;
 import java.util.Objects;
 
 /**
@@ -13,19 +12,21 @@ import java.util.Objects;
  * @author iurif
  */
 public class DataCell {
-    private final Header header;
-    private final Cell cell;
 
-    public DataCell(Header header, Cell cell) {
+    private final Header header;
+    private final String value;
+
+    public DataCell(Header header, String value) {
         this.header = Objects.requireNonNull(header, "header");
-        this.cell = cell;
+        this.value = value;
     }
 
     public Header getHeader() {
         return header;
     }
 
-    public Cell getCell() {
-        return cell;
+    public String getValue() {
+        return value;
     }
+    
 }

@@ -46,18 +46,22 @@ public class ExcelBeansReader {
         List<DataRow> dataRows = new ArrayList<>();
         while (rowIterator.hasNext()) {
             Row row = rowIterator.next();
-            List<DataCell> cells = new ArrayList<>();
-            short lastCellNum = row.getLastCellNum();
-            int totalCells = Math.max(lastCellNum, headers.size());
-            for (int i = 0; i < totalCells; i++) {
-                Cell cell = row.getCell(i);
-                Header header = i < headers.size() ? headers.get(i) : new Header("");
-                cells.add(new DataCell(header, cell));
+            if (row != null) {
+                List<DataCell> cells = new ArrayList<>();
+                short lastCellNum = row.getLastCellNum();
+                int totalCells = Math.max(lastCellNum, headers.size());
+                for (int i = 0; i < totalCells; i++) {
+                    Cell cell = row.getCell(i);
+                    if (cell != null) {
+                        Header header = i < headers.size() ? headers.get(i) : new Header("");
+                        cells.add(new DataCell(header, dataFormatter.formatCellValue(cell, evaluator)));
+                    }
+                }
+                dataRows.add(new DataRow(cells));
             }
-            dataRows.add(new DataRow(row, cells));
         }
 
-        return new DataSheet(sheet, sheet.getSheetName(), headers, dataRows);
+        return new DataSheet(sheet.getSheetName(), headers, dataRows);
     }
 
     private String readCellAsString(Cell cell, FormulaEvaluator evaluator) {
@@ -65,5 +69,10 @@ public class ExcelBeansReader {
             return "";
         }
         return dataFormatter.formatCellValue(cell, evaluator);
+    }
+
+    public static void main(String[] args) throws Exception {
+        ExcelBeansReader r = new ExcelBeansReader();
+        r.readExcelFile("C:\\Users\\iurif\\Desktop\\dropout.xlsx").getDataSheets().get(0).getDataRows().forEach(dr -> dr.getDataCells().forEach(c -> System.out.println(c.getValue())));
     }
 }
