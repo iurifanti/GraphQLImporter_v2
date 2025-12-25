@@ -5,7 +5,11 @@
  */
 package v2.beans;
 
+import common.Utils;
+import java.math.BigDecimal;
 import java.util.Objects;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 
 /**
  *
@@ -14,10 +18,12 @@ import java.util.Objects;
 public class DataCell {
 
     private final Header header;
+    private final Cell cell;
     private final String value;
 
-    public DataCell(Header header, String value) {
+    public DataCell(Header header, Cell cell, String value) {
         this.header = Objects.requireNonNull(header, "header");
+        this.cell = cell;
         this.value = value;
     }
 
@@ -28,5 +34,32 @@ public class DataCell {
     public String getValue() {
         return value;
     }
-    
+
+    private boolean isInteger() {
+        if (!Utils.isBlank(value)) {
+            BigDecimal bd = new BigDecimal(value);
+            return bd.setScale(0).compareTo(bd) == 0;
+        }
+        return false;
+    }
+
+    private boolean isBoolean() {
+        return cell.getCellType() == CellType.BOOLEAN;
+    }
+
+    private boolean quotationMarksNeeded() {
+        return header.isForcedQuotations() || (!isInteger() && !isBoolean());
+    }
+
+    public String getFormattedValue() {
+        String formattedValue = value;
+        if (isInteger()) {
+            formattedValue = new BigDecimal(value).stripTrailingZeros().toPlainString();
+        }
+        if (quotationMarksNeeded()) {
+            formattedValue = "\"" + formattedValue + "\"";
+        }
+        return formattedValue;
+    }
+
 }

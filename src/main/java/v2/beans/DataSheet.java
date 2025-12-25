@@ -13,6 +13,7 @@ import java.util.Objects;
  * @author iurif
  */
 public class DataSheet {
+
     private final String name;
     private final List<Header> headers;
     private final List<DataRow> dataRows;
@@ -33,5 +34,9 @@ public class DataSheet {
 
     public List<DataRow> getDataRows() {
         return dataRows;
+    }
+
+    public boolean isComposition() {
+        return name.startsWith("#");
     }
 }

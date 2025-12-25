@@ -114,7 +114,7 @@ public class GraphQLMutationBuilder {
             return false;
         }
         try {
-            Double.parseDouble(str);
+            Double.valueOf(str);
             return true;
         } catch (NumberFormatException e) {
             return false;
