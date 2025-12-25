@@ -74,6 +74,6 @@ public class ExcelBeansReader {
 
     public static void main(String[] args) throws Exception {
         ExcelBeansReader r = new ExcelBeansReader();
-        r.readExcelFile("C:\\Users\\iurif\\Desktop\\dropout.xlsx").getDataSheets().get(0).getDataRows().forEach(dr -> dr.getDataCells().forEach(c -> System.out.println(c.getValue())));
+        r.readExcelFile("C:\\Users\\iurif\\Desktop\\dropout.xlsx").getDataSheets().get(0).getDataRows().forEach(dr -> dr.getDataCells().forEach(c -> System.out.println(c.getFormattedValue())));
     }
 }

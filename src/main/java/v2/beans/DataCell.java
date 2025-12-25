@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.util.Objects;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
 
 /**
  *
@@ -36,7 +37,7 @@ public class DataCell {
     }
 
     private boolean isInteger() {
-        if (!Utils.isBlank(value)) {
+        if (!Utils.isBlank(value) && cell.getCellType() == CellType.NUMERIC && !DateUtil.isCellDateFormatted(cell)) {
             BigDecimal bd = new BigDecimal(value);
             return bd.setScale(0).compareTo(bd) == 0;
         }
