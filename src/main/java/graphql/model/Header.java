@@ -5,8 +5,6 @@
  */
 package graphql.model;
 
-import graphql.util.Constants;
-
 /**
  *
  * @author iurif
@@ -28,12 +26,12 @@ public class Header {
         this.inferredQuotations = inferredQuotations;
     }
 
-    public String getHeader() {
+    public String getValue() {
         return header;
     }
 
     public boolean isReference() {
-        return header.contains(Constants.DEPENDENT_SEPARATOR);
+        return header.contains(".");
     }
 
     private String defaultRoleName() {
@@ -64,10 +62,10 @@ public class Header {
     }
 
     public String getReferenceClassName() {
-        String cleaned = header.startsWith(Constants.REAL_PREFIX)
-                ? header.substring(Constants.REAL_PREFIX.length())
+        String cleaned = header.startsWith(FORCE_QUOTATION_PREFIX)
+                ? header.substring(FORCE_QUOTATION_PREFIX.length())
                 : header;
-        String[] parts = cleaned.split("\\" + Constants.DEPENDENT_SEPARATOR);
+        String[] parts = cleaned.split("\\.");
         if (parts.length < 2) {
             throw new IllegalArgumentException("Intestazione di riferimento esterno non valida: " + header);
         }
@@ -75,10 +73,10 @@ public class Header {
     }
 
     public String getReferenceAttributeName() {
-        String cleaned = header.startsWith(Constants.REAL_PREFIX)
-                ? header.substring(Constants.REAL_PREFIX.length())
+        String cleaned = header.startsWith(FORCE_QUOTATION_PREFIX)
+                ? header.substring(FORCE_QUOTATION_PREFIX.length())
                 : header;
-        String[] parts = cleaned.split("\\" + Constants.DEPENDENT_SEPARATOR);
+        String[] parts = cleaned.split("\\.");
         if (parts.length < 2) {
             throw new IllegalArgumentException("Intestazione di riferimento esterno non valida: " + header);
         }

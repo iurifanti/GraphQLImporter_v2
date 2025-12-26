@@ -1,5 +1,10 @@
 package graphql.excel;
 
+import graphql.model.DataCell;
+import graphql.model.DataFile;
+import graphql.model.DataRow;
+import graphql.model.DataSheet;
+import graphql.model.Header;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,13 +18,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import graphql.model.DataCell;
-import graphql.model.DataFile;
-import graphql.model.DataRow;
-import graphql.model.DataSheet;
-import graphql.model.Header;
 
-public class ExcelBeansReader {
+public class ExcelDataReader {
 
     private final DataFormatter dataFormatter = new DataFormatter();
 
@@ -75,9 +75,13 @@ public class ExcelBeansReader {
         }
         return dataFormatter.formatCellValue(cell, evaluator);
     }
+    
+    private void fixMappingSheet() {
+        
+    }
 
     public static void main(String[] args) throws Exception {
-        ExcelBeansReader r = new ExcelBeansReader();
+        ExcelDataReader r = new ExcelDataReader();
         r.readExcelFile("C:\\Users\\iurif\\Desktop\\dropout.xlsx").getDataSheets().get(0).getDataRows().forEach(dr -> dr.getDataCells().forEach(c -> System.out.println(c.getFormattedValue())));
     }
 }

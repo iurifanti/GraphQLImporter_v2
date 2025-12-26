@@ -7,6 +7,7 @@ package graphql.model;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -42,7 +43,11 @@ public class DataSheet {
         return name.startsWith(COMPOSITION_PREFIX);
     }
 
-    public String getRoleName() {
+    public String getCompositionRoleName() {
         return name.replace(COMPOSITION_PREFIX, "");
+    }
+
+    public List<Header> externalHeaders() {
+        return headers.stream().filter(Header::isReference).collect(Collectors.toList());
     }
 }

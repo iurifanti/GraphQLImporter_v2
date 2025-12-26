@@ -31,7 +31,7 @@ public class GraphQLMutationBuilder {
      * "Dipartimento").
      * @param wholeIdentifierAttributeName The attribute used to identify the
      * parent (e.g., "nome").
-     * @param wholeIdentifierAttributreValue The value of the parent identifier (e.g.,
+     * @param wholeID The value of the parent identifier (e.g.,
      * "Amministrazione").
      * @param compositionRoleName The name of the composed object (e.g.,
      * "Dipendente").
@@ -40,8 +40,7 @@ public class GraphQLMutationBuilder {
      */
     public String buildCompositionUpdateMutation(
             String wholeObjectName,
-            String wholeIdentifierAttributeName,
-            String wholeIdentifierAttributreValue,
+            String wholeID,
             String compositionRoleName,
             Map<String, String> attributeName2formattedValues) {
 
@@ -50,8 +49,8 @@ public class GraphQLMutationBuilder {
         return String.format(
                 "mutation { %s___update(data: { %s: %s , %s: { create: { %s } } }) { _id } }",
                 wholeObjectName,
-                wholeIdentifierAttributeName,
-                wholeIdentifierAttributreValue,
+                Constants.ID,
+                wholeID,
                 compositionRoleName, // es: "Dipendente"
                 inputData
         );

@@ -60,6 +60,9 @@ public class DataCell {
         if (quotationMarksNeeded()) {
             formattedValue = "\"" + formattedValue + "\"";
         }
+        if (isBlank()) {
+            formattedValue = "";
+        }
         return formattedValue;
     }
 

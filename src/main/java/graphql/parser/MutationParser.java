@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Interface for parsing Excel sheet data and generating GraphQL mutations.
  */
-public interface DataParser {
+public interface MutationParser {
 
     Map<String, String> attribute2type = new LinkedHashMap();
 

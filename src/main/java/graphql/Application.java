@@ -1,17 +1,18 @@
 package graphql;
 
 import graphql.excel.ExcelDataReader;
-import graphql.excel.ExcelSheetData;
 import graphql.graphql.GraphQLMutationBuilder;
 import graphql.graphql.GraphQLQueryBuilder;
 import graphql.graphql.GraphQLService;
+import graphql.model.DataFile;
+import graphql.model.DataSheet;
 import graphql.parser.CompositionParser;
-import graphql.parser.DataParser;
-import graphql.parser.MainDependentParser;
-import graphql.util.Constants;
+import graphql.parser.MainParser;
+import graphql.parser.MutationParser;
 import graphql.util.LoggerUI;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import javax.swing.SwingUtilities;
 
@@ -33,14 +34,14 @@ public class Application {
     }
 
     public void delete() throws Exception {
-        List<ExcelSheetData> sheetsData = excelDataReader.readExcelFile(excelFilePath, true);
+        DataFile fileData = excelDataReader.readExcelFile(excelFilePath);
 
-        for (ExcelSheetData sheetData : sheetsData) {
-            LoggerUI.log("\n--- Processing Sheet: " + sheetData.getSheetName() + " ---");
-            DataParser parser = getParserForSheet(sheetData.getSheetName());
+        for (DataSheet sheetData : fileData.getDataSheets()) {
+            LoggerUI.log("\n--- Processing Sheet: " + sheetData.getName() + " ---");
+            MutationParser parser = getParserForSheet(sheetData);
             List<String> mutations = parser.parseAndGenerateMutations(sheetData, mutationBuilder, queryBuilder, graphQLService);
 
-            LoggerUI.log("Generated Mutations for sheet '" + sheetData.getSheetName() + "':");
+            LoggerUI.log("Generated Mutations for sheet '" + sheetData.getName() + "':");
             for (String mutation : mutations) {
                 LoggerUI.log(mutation + "\n");
                 graphQLService.executeQueryWithFallback(mutation);
@@ -54,43 +55,49 @@ public class Application {
     }
 
     public void processExcelAndGenerateGraphQL(boolean delete) throws Exception {
-        List<ExcelSheetData> sheetsData = excelDataReader.readExcelFile(excelFilePath, delete);
-        
-        /********/
+        DataFile fileData = excelDataReader.readExcelFile(excelFilePath);
+
+        /**
+         * *****
+         */
 //        NestedCompositionUpdateBuilder t = new NestedCompositionUpdateBuilder(sheetsData);
 //        LoggerUI.log("### TEST ###");
 //        LoggerUI.log(t.buildNestedCompositionsUpdateMutations(sheetsData));
         LoggerUI.log("############");
-        /********/
-        
-        for (ExcelSheetData sheetData : sheetsData) {
-            if (delete && sheetData.getSheetName().startsWith(Constants.COMPOSITION_PREFIX)) {
+        /**
+         * *****
+         */
+        if (delete) {
+            Collections.reverse(fileData.getDataSheets());
+        }
+        for (DataSheet sheetData : fileData.getDataSheets()) {
+            if (delete && sheetData.isComposition()) {
                 continue;
             }
-            LoggerUI.log("\n--- Processing Sheet: " + sheetData.getSheetName() + " ---");
-            DataParser parser = getParserForSheet(sheetData.getSheetName());
+            LoggerUI.log("\n--- Processing Sheet: " + sheetData.getName() + " ---");
+            MutationParser parser = getParserForSheet(sheetData);
             List<String> mutations;
             if (delete) {
-                mutations = Arrays.asList(buildGraphQLDelete(sheetData.getSheetName()));
+                mutations = Arrays.asList(buildGraphQLDelete(sheetData.getName()));
             } else {
                 mutations = parser.parseAndGenerateMutations(sheetData, mutationBuilder, queryBuilder, graphQLService);
             }
 
-            LoggerUI.log("Generated Mutations for sheet '" + sheetData.getSheetName() + "':");
+            LoggerUI.log("Generated Mutations for sheet '" + sheetData.getName() + "':");
             for (String mutation : mutations) {
                 graphQLService.executeQueryWithFallback(mutation);
             }
         }
     }
 
-    private DataParser getParserForSheet(String sheetName) {
-        if (sheetName.startsWith(Constants.COMPOSITION_PREFIX)) {
+    private MutationParser getParserForSheet(DataSheet sheet) {
+        if (sheet.isComposition()) {
             return new CompositionParser();
         } else {
-            return new MainDependentParser();
+            return new MainParser();
         }
     }
-    
+
     public static void run(String graphqlEndpoint, String secondaryEndpoint, String username, String password, String excelFilePath, boolean delete) {
         try {
             Application app = new Application(graphqlEndpoint, secondaryEndpoint, username, password, excelFilePath);
