@@ -5,6 +5,8 @@
  */
 package graphql.model;
 
+import graphql.util.Constants;
+
 /**
  *
  * @author iurif
@@ -31,11 +33,11 @@ public class Header {
     }
 
     public boolean isReference() {
-        return header.contains(".");
+        return header.contains(Constants.DEPENDENT_SEPARATOR);
     }
 
     private String defaultRoleName() {
-        return decapitalize(header.split("\\.")[0]) + "_";
+        return decapitalize(getReferenceClassName()) + "_";
     }
 
     public boolean isInferredQuotations() {
@@ -59,6 +61,28 @@ public class Header {
             }
         }
         return defaultRoleName();
+    }
+
+    public String getReferenceClassName() {
+        String cleaned = header.startsWith(Constants.REAL_PREFIX)
+                ? header.substring(Constants.REAL_PREFIX.length())
+                : header;
+        String[] parts = cleaned.split("\\" + Constants.DEPENDENT_SEPARATOR);
+        if (parts.length < 2) {
+            throw new IllegalArgumentException("Intestazione di riferimento esterno non valida: " + header);
+        }
+        return parts[0];
+    }
+
+    public String getReferenceAttributeName() {
+        String cleaned = header.startsWith(Constants.REAL_PREFIX)
+                ? header.substring(Constants.REAL_PREFIX.length())
+                : header;
+        String[] parts = cleaned.split("\\" + Constants.DEPENDENT_SEPARATOR);
+        if (parts.length < 2) {
+            throw new IllegalArgumentException("Intestazione di riferimento esterno non valida: " + header);
+        }
+        return parts[1];
     }
 
     private static String decapitalize(String input) {

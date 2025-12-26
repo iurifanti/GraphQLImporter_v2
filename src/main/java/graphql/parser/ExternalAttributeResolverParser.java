@@ -3,44 +3,48 @@ package graphql.parser;
 import common.Utils;
 import graphql.graphql.GraphQLQueryBuilder;
 import graphql.graphql.GraphQLService;
+import graphql.model.DataCell;
+import graphql.model.DataRow;
+import graphql.model.Header;
 import graphql.util.Constants;
 import graphql.util.JsonUtils;
 import graphql.util.LoggerUI;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 public abstract class ExternalAttributeResolverParser implements DataParser {
 
     protected static final int BATCH_SIZE = 1000;
     protected final Map<String, String> attr2id = new LinkedHashMap<>();
-    private GraphQLQueryBuilder queryBuilder;
-    private GraphQLService graphQLService;
 
-    public ExternalAttributeResolverParser(GraphQLQueryBuilder queryBuilder, GraphQLService graphQLService) {
-        this.queryBuilder = queryBuilder;
-        this.graphQLService = graphQLService;
-    }
-
-    protected Map<ExternalAttribute, Set<String>> collectExternalAttributes(
-            List<String> headers, List<List<String>> rows, Set<String> skipHeaders
+    protected Map<Header, Set<String>> collectExternalAttributes(
+            List<Header> headers,
+            List<DataRow> rows,
+            Set<Header> skipHeaders
     ) {
-        Map<ExternalAttribute, Set<String>> result = new LinkedHashMap<>();
+        Map<Header, Set<String>> result = new LinkedHashMap<>();
         for (int i = 0; i < headers.size(); i++) {
-            String header = headers.get(i);
+            Header header = headers.get(i);
             if (skipHeaders != null && skipHeaders.contains(header)) {
                 continue;
             }
-            if (!ExternalAttribute.isExternalAttribute(header)) {
+            if (!header.isReference()) {
                 continue;
             }
 
-            ExternalAttribute extAttr = ExternalAttribute.parseExternalAttribute(header);
-            Set<String> values = result.computeIfAbsent(extAttr, k -> new LinkedHashSet<>());
-            for (List<String> row : rows) {
-                if (i < row.size()) {
-                    String value = row.get(i);
-                    if (value != null && !value.isEmpty()) {
-                        values.add(value);
+            Set<String> values = result.computeIfAbsent(header, k -> new LinkedHashSet<>());
+            for (DataRow row : rows) {
+                if (i < row.getDataCells().size()) {
+                    DataCell cell = row.get(i);
+                    if (cell != null && !cell.isBlank()) {
+                        values.add(cell.getFormattedValue());
                     }
                 }
             }
@@ -49,12 +53,12 @@ public abstract class ExternalAttributeResolverParser implements DataParser {
     }
 
     protected void resolveAllExternalAttributesBatched(
-            Map<ExternalAttribute, Set<String>> attributesToResolve,
+            Map<Header, Set<String>> attributesToResolve,
             GraphQLQueryBuilder queryBuilder,
             GraphQLService graphQLService
     ) throws Exception {
-        for (Map.Entry<ExternalAttribute, Set<String>> entry : attributesToResolve.entrySet()) {
-            ExternalAttribute extAttr = entry.getKey();
+        for (Map.Entry<Header, Set<String>> entry : attributesToResolve.entrySet()) {
+            Header extAttr = entry.getKey();
             Set<String> values = entry.getValue();
 
             List<String> valueList = new ArrayList<>(values);
@@ -63,16 +67,16 @@ public abstract class ExternalAttributeResolverParser implements DataParser {
             for (int i = 0; i < total; i += BATCH_SIZE) {
                 int end = Math.min(i + BATCH_SIZE, total);
                 Set<String> batch = new LinkedHashSet<>(valueList.subList(i, end));
-                Map<String, String> resolved = MainDependentParser.getIds(
-                        queryBuilder, graphQLService, extAttr.className, extAttr.attributeName, batch
+                Map<String, String> resolved = getIds(
+                        queryBuilder, graphQLService, extAttr.getReferenceClassName(), extAttr.getReferenceAttributeName(), batch
                 );
 
                 for (Map.Entry<String, String> idEntry : resolved.entrySet()) {
-                    String key = buildAttrKey(extAttr.className, extAttr.attributeName, idEntry.getKey());
+                    String key = buildAttrKey(extAttr.getReferenceClassName(), extAttr.getReferenceAttributeName(), idEntry.getKey());
                     attr2id.put(key, idEntry.getValue());
                 }
                 processed += batch.size();
-                LoggerUI.log("Resolved attribute " + extAttr.className + "." + extAttr.attributeName + " IDs: " + processed + " / " + total);
+                LoggerUI.log("ID risolti per l'attributo " + extAttr.getReferenceClassName() + "." + extAttr.getReferenceAttributeName() + ": " + processed + " / " + total);
             }
         }
     }
@@ -82,7 +86,9 @@ public abstract class ExternalAttributeResolverParser implements DataParser {
         return className + attribute + val;
     }
 
-    public Map<String, String> getIds(
+    public static Map<String, String> getIds(
+            GraphQLQueryBuilder queryBuilder,
+            GraphQLService graphQLService,
             String objectName,
             String attributeName,
             Set<String> valuesToQuery
@@ -90,11 +96,11 @@ public abstract class ExternalAttributeResolverParser implements DataParser {
 
         List<String> batchedQueries = queryBuilder.buildGetIdQuery(objectName, attributeName, valuesToQuery);
         int size = valuesToQuery.size();
-        LoggerUI.log("Retrieving values for " + size + " external object" + (size > 1 ? "s" : "") + "...");
-        Map<String, String> value2id = new LinkedHashMap();
+        LoggerUI.log("Recupero dei valori per " + size + " oggetto esterno" + (size != 1 ? "i" : "") + "...");
+        Map<String, String> value2id = new LinkedHashMap<>();
         List<String> duplicati = new LinkedList<>();
         for (String query : batchedQueries) {
-            getIdsBatch(query).forEach((k, v) -> {
+            getIdsBatch(graphQLService, query).forEach((k, v) -> {
                 String prev = value2id.put(k, v);
                 if (prev != null) {
                     duplicati.add(k);
@@ -107,17 +113,17 @@ public abstract class ExternalAttributeResolverParser implements DataParser {
         return value2id;
     }
 
-    private Map<String, String> getIdsBatch(String query) throws Exception {
+    private static Map<String, String> getIdsBatch(GraphQLService graphQLService, String query) throws Exception {
         Optional<String> response;
 
         try {
             response = graphQLService.executeQueryWithFallback(query);
         } catch (Exception e) {
-            throw new RuntimeException("Error executing GraphQL query for dependent ID: " + e.getMessage(), e);
+            throw new RuntimeException("Errore nell'esecuzione della query GraphQL per recuperare l'ID: " + e.getMessage(), e);
         }
 
         if (!response.isPresent()) {
-            throw new RuntimeException("No response received from GraphQL endpoint(s).");
+            throw new RuntimeException("Nessuna risposta ricevuta dagli endpoint GraphQL.");
         }
         Map<String, String> val2id;
         try {
@@ -126,7 +132,7 @@ public abstract class ExternalAttributeResolverParser implements DataParser {
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Unexpected error during ID extraction: " + e.getMessage(), e);
+            throw new RuntimeException("Errore inatteso durante l'estrazione degli ID: " + e.getMessage(), e);
         }
         return val2id;
     }
