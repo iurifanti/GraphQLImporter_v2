@@ -42,7 +42,7 @@ public abstract class ExternalAttributeResolver {
                             + "' nella colonna '" + dataCell.getHeader().getValue() + "' riga " + (sheetData.getDataRows().indexOf(rowData) + 2));
                     continue;
                 }
-                mutationAttributes.put(dataCell.getHeader().getReferenceAttributeName(), resolvedId);
+                mutationAttributes.put(dataCell.getHeader().getAttributeName(), resolvedId);
             } else {
                 mutationAttributes.put(dataCell.getHeader().getAttributeName(), dataCell.getFormattedValue());
             }
@@ -56,7 +56,7 @@ public abstract class ExternalAttributeResolver {
             DataSheet sheetData) throws Exception {
         for (Header header : sheetData.externalHeaders()) {
             Set<String> values = extractValuesForHeader(sheetData, header);
-            Map<String, String> values2id = getIds(queryBuilder, graphQLService, header.getReferenceClassName(), header.getReferenceAttributeName(), values);
+            Map<String, String> values2id = getIds(queryBuilder, graphQLService, header.getReferencedClassName(), header.getReferencedAttributeName(), values);
             header2value2id.put(header, values2id);
         }
     }

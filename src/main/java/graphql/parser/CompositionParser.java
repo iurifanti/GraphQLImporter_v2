@@ -62,7 +62,7 @@ public class CompositionParser extends ExternalAttributeResolver implements Muta
             Map<String, String> compositionAttributes = buildCompositionAttributes(sheetData, rowData, parentHeader);
 
             String mutation = mutationBuilder.buildCompositionUpdateMutation(
-                    parentHeader.getReferenceClassName(),
+                    parentHeader.getReferencedClassName(),
                     parentId,
                     sheetData.getCompositionRoleName(),
                     compositionAttributes

@@ -35,7 +35,7 @@ public class Header {
     }
 
     private String defaultRoleName() {
-        return decapitalize(getReferenceClassName()) + "_";
+        return decapitalize(getReferencedClassName()) + "_";
     }
 
     public boolean isInferredQuotations() {
@@ -46,7 +46,7 @@ public class Header {
         return header.startsWith(FORCE_QUOTATION_PREFIX);
     }
 
-    public String roleName() {
+    public String getReferencedRoleName() {
         if (!isReference()) {
             return null;
         }
@@ -61,26 +61,20 @@ public class Header {
         return defaultRoleName();
     }
 
-    public String getReferenceClassName() {
-        String cleaned = header.startsWith(FORCE_QUOTATION_PREFIX)
-                ? header.substring(FORCE_QUOTATION_PREFIX.length())
-                : header;
-        String[] parts = cleaned.split("\\.");
-        if (parts.length < 2) {
-            throw new IllegalArgumentException("Intestazione di riferimento esterno non valida: " + header);
+    public String getReferencedClassName() {
+        if (isReference()) {
+            return header.replace(EXT_REF_PREFIX, "").split("\\.")[0].split("\\[")[0];
+        } else {
+            return null;
         }
-        return parts[0];
     }
 
-    public String getReferenceAttributeName() {
-        String cleaned = header.startsWith(FORCE_QUOTATION_PREFIX)
-                ? header.substring(FORCE_QUOTATION_PREFIX.length())
-                : header;
-        String[] parts = cleaned.split("\\.");
-        if (parts.length < 2) {
-            throw new IllegalArgumentException("Intestazione di riferimento esterno non valida: " + header);
+    public String getReferencedAttributeName() {
+        if (isReference()) {
+            return header.split("\\.")[1];
+        } else {
+            return null;
         }
-        return parts[1];
     }
 
     private static String decapitalize(String input) {
@@ -91,7 +85,11 @@ public class Header {
     }
 
     public String getAttributeName() {
-        return header.replace(FORCE_QUOTATION_PREFIX, "");
+        if (isReference()) {
+            return getReferencedRoleName();
+        } else {
+            return header.replace(FORCE_QUOTATION_PREFIX, "");
+        }
     }
 
 }

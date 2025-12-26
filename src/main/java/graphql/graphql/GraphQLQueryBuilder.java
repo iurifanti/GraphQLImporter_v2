@@ -1,13 +1,12 @@
 package graphql.graphql;
 
+import common.Utils;
 import graphql.util.Constants;
-import graphql.util.JsonUtils;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Builds GraphQL query strings for fetching data, specifically for getting IDs
@@ -41,10 +40,8 @@ public class GraphQLQueryBuilder {
 
             int end = Math.min(i + batchSize, referencedAttributeFormattedValues.size());
             List<String> batch = list.subList(i, end);
-            
-            String attributeValuesConc = batch.stream().
-                    map(v -> JsonUtils.escapeJsonString(v)).
-                    collect(Collectors.joining(","));
+
+            String attributeValuesConc = Utils.join(batch, ", ");
 
             String query = String.format(
                     "query {\n"

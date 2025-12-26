@@ -10,6 +10,7 @@ import graphql.parser.CompositionParser;
 import graphql.parser.MainParser;
 import graphql.parser.MutationParser;
 import graphql.util.LoggerUI;
+import graphql.util.SslBypass;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +32,7 @@ public class Application {
         // Usa il costruttore di GraphQLService che supporta due endpoint e autenticazione base
         this.graphQLService = new GraphQLService(graphqlEndpoint, secondaryEndpoint, username, password);
         this.excelFilePath = excelFilePath;
+        SslBypass.disableSslVerificationIfNeeded();
     }
 
     public void delete() throws Exception {

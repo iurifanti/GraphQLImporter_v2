@@ -6,6 +6,7 @@
 package graphql.model;
 
 import common.Utils;
+import graphql.util.JsonUtils;
 import java.math.BigDecimal;
 import java.util.Objects;
 import org.apache.poi.ss.usermodel.Cell;
@@ -58,7 +59,7 @@ public class DataCell {
             formattedValue = new BigDecimal(value).stripTrailingZeros().toPlainString();
         }
         if (quotationMarksNeeded()) {
-            formattedValue = "\"" + formattedValue + "\"";
+            formattedValue = "\"" + JsonUtils.escapeJsonString(formattedValue) + "\"";
         }
         if (isBlank()) {
             formattedValue = "";

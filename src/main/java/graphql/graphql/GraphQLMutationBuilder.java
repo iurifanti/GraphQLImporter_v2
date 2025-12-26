@@ -75,8 +75,8 @@ public class GraphQLMutationBuilder {
                 .map(entry -> {
                     String attrName = entry.getKey();
                     String value = entry.getValue().trim(); // Rimuovi spazi extra
-                    String escapedValue = value.replace("\"", "\\\"");
-                    return String.format("%s: %s", attrName, escapedValue);
+//                    String escapedValue = value.replace("\"", "\\\"");
+                    return String.format("%s: %s", attrName, value);
                 })
                 .collect(Collectors.joining(", "));
     }
