@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  */
 public class DataSheet {
 
-    private final String name;
+    private String name;
     private final List<Header> headers;
     private final List<DataRow> dataRows;
 
@@ -29,6 +29,10 @@ public class DataSheet {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public List<Header> getHeaders() {

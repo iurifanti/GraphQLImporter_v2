@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
@@ -30,7 +32,9 @@ public class ExcelDataReader {
             for (Sheet sheet : workbook) {
                 sheets.add(parseSheet(sheet, evaluator));
             }
-            return new DataFile(sheets);
+            DataFile data = new DataFile(sheets);
+            fixMappingSheet(data);
+            return data;
         }
     }
 
@@ -75,9 +79,21 @@ public class ExcelDataReader {
         }
         return dataFormatter.formatCellValue(cell, evaluator);
     }
-    
-    private void fixMappingSheet() {
-        
+
+    private void fixMappingSheet(DataFile data) {
+        DataSheet mappingSheet = data.mappingSheet();
+        if (mappingSheet == null) {
+            return;
+        }
+        data.getDataSheets().remove(mappingSheet);
+        if (mappingSheet.getHeaders().size() != 2) {
+            throw new RuntimeException("Il foglio di mapping deve contenere esattamente due colonne");
+        }
+        Map<String, String> oldName2newName = new LinkedHashMap();
+        mappingSheet.getDataRows().forEach(r -> oldName2newName.put(r.get(0).getValue(), r.get(1).getValue()));
+        data.getDataSheets().stream().
+                filter(s -> oldName2newName.keySet().contains(s.getName())).
+                forEach(s -> s.setName(oldName2newName.get(s.getName())));
     }
 
     public static void main(String[] args) throws Exception {

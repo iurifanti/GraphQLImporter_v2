@@ -31,4 +31,8 @@ public class DataRow {
     public DataCell get(Header header) {
         return header2cell.get(header);
     }
+
+    public DataCell get(int index) {
+        return dataCells.get(index);
+    }
 }
