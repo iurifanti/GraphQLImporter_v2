@@ -13,8 +13,9 @@ import java.util.Base64;
 import java.util.Optional;
 
 /**
- * Servizio per eseguire query GraphQL con supporto a endpoint
- * primario/secondario e autenticazione di base.
+ * Servizio responsabile dell'esecuzione delle query GraphQL, con gestione di
+ * fallback su endpoint secondario, autenticazione Basic e logging dettagliato
+ * degli errori restituiti dal server.
  */
 public class GraphQLService {
 
@@ -26,12 +27,8 @@ public class GraphQLService {
     private String pass;
 
     /**
-     * Costruttore che istanzia i client con autenticazione base.
-     *
-     * @param primaryEndpoint URL endpoint primario
-     * @param secondaryEndpoint URL endpoint secondario
-     * @param username username per autenticazione base
-     * @param password password per autenticazione base
+     * Configura il servizio impostando gli endpoint e l'intestazione di
+     * autenticazione Basic necessaria per tutte le richieste.
      */
     public GraphQLService(String primaryEndpoint, String secondaryEndpoint, String username, String password) {
         this.primaryEndpoint = primaryEndpoint;
@@ -42,18 +39,30 @@ public class GraphQLService {
         this.basicAuthHeader = "Basic " + Base64.getEncoder().encodeToString(auth.getBytes());
     }
 
+    /**
+     * Restituisce l'utente configurato per l'autenticazione.
+     */
     public String getUser() {
         return user;
     }
 
+    /**
+     * Aggiorna l'utente utilizzato nelle chiamate HTTP.
+     */
     public void setUser(String user) {
         this.user = user;
     }
 
+    /**
+     * Restituisce la password corrente.
+     */
     public String getPass() {
         return pass;
     }
 
+    /**
+     * Aggiorna la password utilizzata nelle chiamate HTTP.
+     */
     public void setPass(String pass) {
         this.pass = pass;
     }
@@ -114,14 +123,14 @@ public class GraphQLService {
                         issueLevel = err.get("extensions").get("issueLevel").asText();
                     }
                     if (!"WARNING".equalsIgnoreCase(issueLevel)) {
-                        return false; // C'è almeno un errore "vero"
+                        return false; // Presenza di errori bloccanti
                     }
                 }
-                return true; // Tutti warning
+                return true; // Solo avvisi non bloccanti
             }
         } catch (Exception ignore) {
         }
-        return false; // fallback: considera errore vero
+        return false; // Fallback conservativo: considera errori bloccanti
     }
 
     private boolean containsUndefinedQueryError(String jsonResponse) {
@@ -142,7 +151,7 @@ public class GraphQLService {
             if (root.has("errors")) {
                 JsonNode errors = root.get("errors");
                 for (JsonNode err : errors) {
-                    // Cerca il livello dell'errore
+                    // Identifica la severità dell'errore, se disponibile
                     String issueLevel = null;
                     if (err.has("extensions") && err.get("extensions").has("issueLevel")) {
                         issueLevel = err.get("extensions").get("issueLevel").asText();
@@ -154,7 +163,7 @@ public class GraphQLService {
                     } else {
                         LoggerUI.log("❌ Errore GraphQL sull'endpoint: " + endpoint);
                         LoggerUI.log("  • Messaggio: " + msg);
-                        // Dettagli posizione
+                        // Dettagli sulla posizione nel documento GraphQL
                         if (err.has("locations")) {
                             for (JsonNode loc : err.get("locations")) {
                                 String line = loc.has("line") ? loc.get("line").asText() : "?";
@@ -162,7 +171,7 @@ public class GraphQLService {
                                 LoggerUI.log("    (Linea: " + line + ", Colonna: " + col + ")");
                             }
                         }
-                        // Classificazione (se presente)
+                        // Classificazione per diagnosi rapida (se presente)
                         if (err.has("extensions") && err.get("extensions").has("classification")) {
                             LoggerUI.log("    Tipo errore: " + err.get("extensions").get("classification").asText());
                         }

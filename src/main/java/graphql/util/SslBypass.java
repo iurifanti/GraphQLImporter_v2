@@ -1,18 +1,21 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package graphql.util;
 
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.*;
 
+/**
+ * Utility per disabilitare la verifica SSL in ambienti dove è necessario
+ * accettare certificati non validi (solo per utilizzo controllato).
+ */
 public final class SslBypass {
 
     private SslBypass() {}
 
+    /**
+     * Configura l'HTTPS client predefinito perché accetti qualsiasi certificato
+     * e host, utile in contesti di test con certificati self-signed.
+     */
     public static void disableSslVerificationIfNeeded() {
         try {
             TrustManager[] trustAll = new TrustManager[]{
@@ -28,7 +31,7 @@ public final class SslBypass {
             SSLContext sc = SSLContext.getInstance("TLS");
             sc.init(null, trustAll, new SecureRandom());
 
-            // SOLO HTTPS viene toccato
+            // L'intervento riguarda esclusivamente le connessioni HTTPS
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
             HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
 

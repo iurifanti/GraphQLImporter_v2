@@ -45,9 +45,9 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
- * Form per inserimento parametri endpoint GraphQL, credenziali e file Excel.
- * Ora include gestione dei preset di endpoint con salvataggio e selezione da
- * menu.
+ * Interfaccia Swing per configurare endpoint GraphQL, credenziali e file Excel
+ * da importare o eliminare. Gestisce preset salvati su disco e offre un log in
+ * tempo reale delle operazioni svolte.
  */
 public class GraphQLExcelForm extends JFrame {
 
@@ -121,7 +121,7 @@ public class GraphQLExcelForm extends JFrame {
 
         createMenuBar();
 
-        // Carica le properties PRIMA di pack()
+        // Carica le preferenze prima del pack così da ripristinare correttamente le dimensioni
         loadProperties();
         pack();
         applyFrameSizeFromProperties();
@@ -136,7 +136,7 @@ public class GraphQLExcelForm extends JFrame {
             UIManager.setLookAndFeel(
                     UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ex) {
-            // Se fallisce, ignora e lascia default
+            // Se il look&feel non è disponibile si prosegue con quello di default
         }
     }
 
@@ -156,7 +156,7 @@ public class GraphQLExcelForm extends JFrame {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
-        // Endpoint primario
+        // Campi di connessione agli endpoint GraphQL
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
@@ -172,7 +172,6 @@ public class GraphQLExcelForm extends JFrame {
         gbc.weightx = 1.0;
         jpMainPanel.add(jtfEndpoint, gbc);
 
-        // Endpoint secondario (sotto il primario)
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
@@ -188,7 +187,6 @@ public class GraphQLExcelForm extends JFrame {
         gbc.weightx = 1.0;
         jpMainPanel.add(jtfSecondaryEndpoint, gbc);
 
-        // Username
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 1;
@@ -204,7 +202,6 @@ public class GraphQLExcelForm extends JFrame {
         gbc.weightx = 1.0;
         jpMainPanel.add(jtfUsername, gbc);
 
-        // Password
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 1;
@@ -220,7 +217,7 @@ public class GraphQLExcelForm extends JFrame {
         gbc.weightx = 1.0;
         jpMainPanel.add(jtfPassword, gbc);
 
-        // Excel path + browse
+        // Sezione per selezionare il file Excel da processare
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 1;
@@ -245,7 +242,7 @@ public class GraphQLExcelForm extends JFrame {
         gbc.weightx = 0;
         jpMainPanel.add(jbSfoglia, gbc);
 
-        // Log area (scrollabile)
+        // Area di log scrollabile per mostrare output e errori runtime
         gbc.gridx = 0;
         gbc.gridy = 5;
         gbc.gridwidth = 3;
@@ -257,7 +254,7 @@ public class GraphQLExcelForm extends JFrame {
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jpMainPanel.add(scrollPane, gbc);
 
-        // Bottoni Importa/Elimina
+        // Pannello comandi: importazione, eliminazione e chiusura
         JPanel jpButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         jbImporta = new JButton("Importa");
         jbElimina = new JButton("Elimina");
@@ -279,7 +276,7 @@ public class GraphQLExcelForm extends JFrame {
         FocusAdapter selectAllOnFocus = new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
-                // Necessario usare invokeLater per evitare conflitto con la selezione automatica di Swing
+                // invokeLater evita conflitti con la selezione automatica gestita da Swing
                 SwingUtilities.invokeLater(() -> {
                     JTextField source = (JTextField) e.getSource();
                     source.selectAll();
@@ -287,7 +284,7 @@ public class GraphQLExcelForm extends JFrame {
             }
         };
 
-        // Listeners
+        // Associazione dei listener ai componenti interattivi
         jbSfoglia.addActionListener(this::onSfoglia);
         jbImporta.addActionListener(this::onImporta);
         jbElimina.addActionListener(this::onElimina);
@@ -317,7 +314,7 @@ public class GraphQLExcelForm extends JFrame {
         }
     }
 
-    // -- DA QUI INSERIRE LA LOGICA DEI PULSANTI (implementata dall'utente) --
+    // Callback dei pulsanti principali
     private void onImporta(ActionEvent e) {
         logArea.clear();
         logArea.log("Premuto IMPORTA");
@@ -365,7 +362,7 @@ public class GraphQLExcelForm extends JFrame {
         return sw.toString();
     }
 
-    // Getter per parametri (opzionali, utili per la logica)
+    // Accessor per i valori inseriti dall'utente
     public String getEndpoint() {
         return jtfEndpoint.getText().trim();
     }
@@ -386,7 +383,7 @@ public class GraphQLExcelForm extends JFrame {
         return jtfExcelPath.getText().trim();
     }
 
-    // --- Gestione Properties ---
+    // --- Gestione delle properties di configurazione ---
     private void loadProperties() {
         File propFile = new File(PROPERTIES_FILE);
         if (!propFile.exists()) {
@@ -408,7 +405,7 @@ public class GraphQLExcelForm extends JFrame {
                 } catch (NumberFormatException ignored) {
                 }
             }
-            // Carica i preset dopo aver caricato le properties
+            // I preset vanno caricati dopo aver ripristinato i valori base
             loadPresetsFromProperties();
             logArea.log("Parametri caricati da " + PROPERTIES_FILE);
         } catch (IOException ex) {
@@ -425,13 +422,13 @@ public class GraphQLExcelForm extends JFrame {
     private void createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
-        // Help menu
+        // Menu di supporto con la guida all'uso
         JMenu helpMenu = new JMenu("Help");
         JMenuItem guidaItem = new JMenuItem("Guida all'utilizzo...");
         guidaItem.addActionListener(e -> showHelpDialog());
         helpMenu.add(guidaItem);
 
-        // Presets menu
+        // Menu per salvare e richiamare preset di configurazione
         presetsMenu = new JMenu("Presets");
         JMenuItem savePresetItem = new JMenuItem("Salva preset...");
         savePresetItem.addActionListener(e -> onSavePreset());
@@ -475,7 +472,7 @@ public class GraphQLExcelForm extends JFrame {
         Dimension size = getSize();
         formProperties.setProperty("frameWidth", Integer.toString(size.width));
         formProperties.setProperty("frameHeight", Integer.toString(size.height));
-        // Salva anche i preset
+        // Salva anche le configurazioni preimpostate
         savePresetsToProperties();
         try (FileOutputStream fos = new FileOutputStream(PROPERTIES_FILE)) {
             formProperties.store(fos, "Parametri GraphQLExcelForm");
@@ -485,14 +482,14 @@ public class GraphQLExcelForm extends JFrame {
         }
     }
 
-    // --- Gestione Presets ---
+    // --- Gestione Preset salvati ---
     private static class Preset {
 
         String name;
         String endpoint;
         String secondaryEndpoint;
         String username;
-        String encodedPassword; // la password codificata
+        String encodedPassword; // password codificata in Base64
 
         Preset(String name, String endpoint, String secondaryEndpoint, String username, String encodedPassword) {
             this.name = name;
@@ -527,7 +524,7 @@ public class GraphQLExcelForm extends JFrame {
     }
 
     private void savePresetsToProperties() {
-        // Rimuovi tutte le chiavi preset prima di riscriverle
+        // Rimuove le chiavi esistenti prima di rigenerare la sezione dedicata ai preset
         List<String> toRemove = new ArrayList<>();
         for (String key : formProperties.stringPropertyNames()) {
             if (key.startsWith(PRESETS_PREFIX)) {
@@ -537,7 +534,7 @@ public class GraphQLExcelForm extends JFrame {
         for (String key : toRemove) {
             formProperties.remove(key);
         }
-        // Inserisci tutti i preset attuali
+        // Inserisce nuovamente tutti i preset correnti
         for (Preset preset : loadedPresets.values()) {
             formProperties.setProperty(PRESETS_PREFIX + preset.name + ".endpoint", preset.endpoint);
             formProperties.setProperty(PRESETS_PREFIX + preset.name + ".secondary", preset.secondaryEndpoint);
@@ -562,7 +559,7 @@ public class GraphQLExcelForm extends JFrame {
             for (Preset preset : loadedPresets.values()) {
                 JMenu presetSubMenu = new JMenu(preset.name);
 
-                // Voce "Usa" (applica il preset)
+                // Opzione per applicare subito il preset
                 JMenuItem useItem = new JMenuItem("Usa");
                 useItem.addActionListener(e -> applyPreset(preset));
                 presetSubMenu.add(useItem);
@@ -605,7 +602,7 @@ public class GraphQLExcelForm extends JFrame {
             JOptionPane.showMessageDialog(this, "Nome già esistente.", "Errore", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        // Codifica la password (NON in chiaro)
+        // Codifica la password per evitarne il salvataggio in chiaro
         String encodedPwd = Base64.getEncoder().encodeToString(new String(getPassword()).getBytes());
         loadedPresets.put(presetName, new Preset(
                 presetName,
@@ -614,7 +611,7 @@ public class GraphQLExcelForm extends JFrame {
                 getUsername(),
                 encodedPwd
         ));
-        saveProperties(); // Salva subito
+        saveProperties(); // Persistenza immediata sul file di properties
         reloadPresetsMenu();
         logArea.log("Preset \"" + presetName + "\" salvato.");
     }
@@ -673,7 +670,7 @@ public class GraphQLExcelForm extends JFrame {
         logArea.log("Preset \"" + preset.name + "\" rinominato in \"" + newName + "\".");
     }
 
-    // Nuovo metodo: aggiorna i valori del preset con quelli attuali della form
+    // Aggiorna i valori del preset con quelli attualmente presenti nella form
     private void onUpdatePreset(Preset preset) {
         int res = JOptionPane.showConfirmDialog(
                 this,

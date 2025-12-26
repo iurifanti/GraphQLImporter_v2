@@ -9,22 +9,14 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Builds GraphQL query strings for fetching data, specifically for getting IDs
- * of dependent objects.
+ * Genera query GraphQL per recuperare gli _id di oggetti referenziati,
+ * gestendo anche la suddivisione in batch dei valori richiesti.
  */
 public class GraphQLQueryBuilder {
 
     /**
-     * Builds a GraphQL query to retrieve the _id of an object based on a
-     * specific attribute.
-     *
-     * @param referencedClassName The name of the GraphQL object (e.g.,
-     * "Dipartimento").
-     * @param referencedAttributeName The name of the attribute to filter by
-     * (e.g., "nome").
-     * @param referencedAttributeFormattedValues The value of the attribute
-     * (e.g., "Amministrazione").
-     * @return The complete GraphQL query string.
+     * Crea una o più query per ottenere l'identificativo di record esistenti
+     * filtrando per uno specifico attributo.
      */
     public List<String> buildGetIdQuery(String referencedClassName, String referencedAttributeName, Set<String> referencedAttributeFormattedValues) {
         Objects.requireNonNull(referencedClassName, "Object name cannot be null");

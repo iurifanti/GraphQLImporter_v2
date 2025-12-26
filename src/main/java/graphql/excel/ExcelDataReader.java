@@ -21,10 +21,17 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+/**
+ * Reader specializzato che trasforma un file Excel in strutture dati
+ * utilizzabili dai parser GraphQL.
+ */
 public class ExcelDataReader {
 
     private final DataFormatter dataFormatter = new DataFormatter();
 
+    /**
+     * Carica il file Excel e converte ogni foglio in un {@link DataSheet}.
+     */
     public DataFile readExcelFile(String filePath) throws IOException {
         try (InputStream fis = new FileInputStream(filePath); Workbook workbook = new XSSFWorkbook(fis)) {
             FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
@@ -38,6 +45,10 @@ public class ExcelDataReader {
         }
     }
 
+    /**
+     * Converte un singolo foglio in intestazioni e righe di dati già
+     * formattati.
+     */
     private DataSheet parseSheet(Sheet sheet, FormulaEvaluator evaluator) {
         List<Header> headers = new ArrayList<>();
         Iterator<Row> rowIterator = sheet.iterator();
@@ -73,6 +84,10 @@ public class ExcelDataReader {
         return new DataSheet(sheet.getSheetName(), headers, dataRows);
     }
 
+    /**
+     * Ritorna il contenuto della cella in formato stringa, gestendo le
+     * eventuali formule tramite l'evaluator.
+     */
     private String readCellAsString(Cell cell, FormulaEvaluator evaluator) {
         if (cell == null) {
             return "";
@@ -80,6 +95,10 @@ public class ExcelDataReader {
         return dataFormatter.formatCellValue(cell, evaluator);
     }
 
+    /**
+     * Applica il foglio speciale "_mapping" per rinominare i fogli seguendo le
+     * regole definite dall'utente.
+     */
     private void fixMappingSheet(DataFile data) {
         DataSheet mappingSheet = data.mappingSheet();
         if (mappingSheet == null) {

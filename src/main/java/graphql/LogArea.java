@@ -1,17 +1,20 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package graphql;
 
 import java.awt.*;
 import javax.swing.*;
 
+/**
+ * Area di testo personalizzata per visualizzare log in tempo reale, con
+ * gestione del colore per gli errori e pulizia automatica quando il testo
+ * supera una soglia.
+ */
 public class LogArea extends JTextArea {
 
     private static final int LOG_MAX_CHARS = 500_000;
 
+    /**
+     * Inizializza l'area rendendola di sola lettura e con font monospaziato.
+     */
     public LogArea() {
         setEditable(false);
         setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));

@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package graphql.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -15,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
- * @author iurif
+ * Utility per la gestione di stringhe e risposte JSON utilizzate durante la
+ * costruzione ed esecuzione delle query GraphQL.
  */
 public class JsonUtils {
 
@@ -44,7 +39,7 @@ public class JsonUtils {
     }
 
     private String findValueRecursive(JsonNode node, String attributeName) {
-        // Se il nodo è l'attributo e contiene un valore semplice → restituisci
+        // Se il nodo è l'attributo e contiene un valore semplice restituisce subito il testo
         if (node.has(attributeName)) {
             JsonNode val = node.get(attributeName);
             if (val.isValueNode()) {  // string, number, boolean
@@ -52,7 +47,7 @@ public class JsonUtils {
             }
         }
 
-        // Se è un oggetto, scendi nei figli
+        // Se è un oggetto o un array, continua la ricerca sui nodi figli
         if (node.isObject() || node.isArray()) {
             for (JsonNode child : node) {
                 String result = findValueRecursive(child, attributeName);
