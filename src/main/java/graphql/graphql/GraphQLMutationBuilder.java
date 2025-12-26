@@ -5,38 +5,22 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Builds GraphQL queries and mutations from provided data.
+ * Responsabile della generazione delle mutation GraphQL a partire dai dati
+ * estratti dai fogli Excel.
  */
 public class GraphQLMutationBuilder {
 
     /**
-     * Builds a GraphQL create mutation.
-     *
-     * @param objectName The name of the object to create (e.g.,
-     * "Dipartimento").
-     * @param attributes A map of attribute names to their values.
-     * @return The GraphQL create mutation string.
+     * Costruisce una mutation di creazione per un'entità principale.
      */
     public String buildMainCreateMutation(String objectName, Map<String, String> attributes) {
-//        LoggerUI.log("attributes: " + attributes);
         String inputData = formatAttributes(attributes);
-//        LoggerUI.log("inputData; " + inputData);
         return String.format("mutation { %s___create(data: { %s }) { " + Constants.ID + " } }", objectName, inputData);
     }
 
     /**
-     * Builds a GraphQL update mutation for composition (nested object).
-     *
-     * @param wholeObjectName The name of the parent object (e.g.,
-     * "Dipartimento").
-     * @param wholeIdentifierAttributeName The attribute used to identify the
-     * parent (e.g., "nome").
-     * @param wholeID The value of the parent identifier (e.g.,
-     * "Amministrazione").
-     * @param compositionRoleName The name of the composed object (e.g.,
-     * "Dipendente").
-     * @param attributeName2formattedValues A map of attributes for the composed object.
-     * @return The GraphQL update mutation string.
+     * Genera una mutation di aggiornamento per aggiungere elementi di una
+     * composizione al "whole" indicato.
      */
     public String buildCompositionUpdateMutation(
             String wholeObjectName,
@@ -57,25 +41,19 @@ public class GraphQLMutationBuilder {
     }
 
     /**
-     * Formats a map of attributes into a GraphQL input string. Handles
-     * blank/empty values and boolean conversion.
-     *
-     * @param attributeName2formattedValue The map of attribute names to their
-     * values.
-     * @return A string formatted for GraphQL input (e.g., "name: \"value\",
-     * quantity: 10").
+     * Converte la mappa degli attributi in una stringa GraphQL pronta per
+     * essere inserita nella mutation, ignorando i campi vuoti o nulli.
      */
     private String formatAttributes(Map<String, String> attributeName2formattedValue) {
         return attributeName2formattedValue.entrySet().stream()
                 .filter(entry -> {
                     String value = entry.getValue();
-                    // NON includere l'attributo se il valore è null o una stringa vuota/blank
+                    // Esclude l'attributo se il valore non contiene informazioni utili
                     return value != null && !value.trim().isEmpty();
                 })
                 .map(entry -> {
                     String attrName = entry.getKey();
-                    String value = entry.getValue().trim(); // Rimuovi spazi extra
-//                    String escapedValue = value.replace("\"", "\\\"");
+                    String value = entry.getValue().trim(); // Rimuove spazi superflui
                     return String.format("%s: %s", attrName, value);
                 })
                 .collect(Collectors.joining(", "));

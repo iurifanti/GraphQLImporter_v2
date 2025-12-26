@@ -1,13 +1,9 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package graphql.model;
 
 /**
- *
- * @author iurif
+ * Modello per l'intestazione di una colonna del foglio Excel, capace di
+ * interpretare prefissi speciali per riferimenti esterni e forzature di
+ * formattazione.
  */
 public class Header {
 
@@ -15,21 +11,36 @@ public class Header {
     private static final String EXT_REF_PREFIX = "*";
     private final String header;
 
-    // quando scorro tutti i valori, se uno solo è un decimale allora forzo l'uso delle vergolette anche se uno di loro è intero
+    // Flag derivato dall'analisi dei valori: se anche un solo valore richiede virgolette, tutte le celle della colonna le useranno
     private boolean inferredQuotations = false;
 
+    /**
+     * Inizializza l'intestazione rimuovendo l'eventuale prefisso di
+     * riferimento esterno.
+     */
     public Header(String header) {
         this.header = header.replace(EXT_REF_PREFIX, "");
     }
 
+    /**
+     * Imposta la necessità di usare virgolette per la colonna in base ai dati
+     * analizzati.
+     */
     public void setInferredQuotations(boolean inferredQuotations) {
         this.inferredQuotations = inferredQuotations;
     }
 
+    /**
+     * Restituisce il nome originale dell'intestazione.
+     */
     public String getValue() {
         return header;
     }
 
+    /**
+     * Indica se la colonna fa riferimento a un'altra tabella (notazione
+     * Classe.campo).
+     */
     public boolean isReference() {
         return header.contains(".");
     }
@@ -38,14 +49,24 @@ public class Header {
         return decapitalize(getReferencedClassName()) + "_";
     }
 
+    /**
+     * Segnala se le virgolette sono state dedotte dai valori letti.
+     */
     public boolean isInferredQuotations() {
         return inferredQuotations;
     }
 
+    /**
+     * Controlla se il prefisso forza l'uso delle virgolette.
+     */
     public boolean isForcedQuotations() {
         return header.startsWith(FORCE_QUOTATION_PREFIX);
     }
 
+    /**
+     * Ricava il nome del ruolo per una composizione o riferimento esterno,
+     * eventualmente personalizzato tra parentesi quadre.
+     */
     public String getReferencedRoleName() {
         if (!isReference()) {
             return null;
@@ -61,6 +82,9 @@ public class Header {
         return defaultRoleName();
     }
 
+    /**
+     * Restituisce il nome della classe referenziata nella colonna.
+     */
     public String getReferencedClassName() {
         if (isReference()) {
             return header.replace(EXT_REF_PREFIX, "").split("\\.")[0].split("\\[")[0];
@@ -69,6 +93,9 @@ public class Header {
         }
     }
 
+    /**
+     * Restituisce il nome dell'attributo referenziato nella classe esterna.
+     */
     public String getReferencedAttributeName() {
         if (isReference()) {
             return header.split("\\.")[1];
