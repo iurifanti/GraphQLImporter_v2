@@ -1,9 +1,12 @@
 package graphql.parser;
 
-import graphql.excel.ExcelSheetData;
 import graphql.graphql.GraphQLMutationBuilder;
 import graphql.graphql.GraphQLQueryBuilder;
 import graphql.graphql.GraphQLService;
+import graphql.model.DataCell;
+import graphql.model.DataRow;
+import graphql.model.DataSheet;
+import graphql.model.Header;
 import graphql.util.Constants;
 import graphql.util.LoggerUI;
 import java.util.*;
@@ -13,27 +16,26 @@ public class CompositionParser extends ExternalAttributeResolverParser {
 
     @Override
     public List<String> parseAndGenerateMutations(
-            ExcelSheetData sheetData,
+            DataSheet sheetData,
             GraphQLMutationBuilder mutationBuilder,
             GraphQLQueryBuilder queryBuilder,
             GraphQLService graphQLService) throws Exception {
 
         validateHeaders(sheetData);
 
-        String fullSheetName = sheetData.getSheetName();
-        String compositionName = fullSheetName.substring(Constants.COMPOSITION_PREFIX.length());
+        String fullSheetName = sheetData.getName();
+        String compositionName = sheetData.getRoleName();
 
         // Trova tutti i riferimenti esterni
-        List<String> externalHeaders = sheetData.getHeaders().stream()
-                .filter(ExternalAttribute::isExternalAttribute)
+        List<Header> externalHeaders = sheetData.getHeaders().stream()
+                .filter(Header::isReference)
                 .collect(Collectors.toList());
         if (externalHeaders.isEmpty()) {
-            throw new IllegalArgumentException("Composition sheet '" + sheetData.getSheetName()
+            throw new IllegalArgumentException("Composition sheet '" + sheetData.getName()
                     + "' must contain at least one parent identifier header (e.g., '*Parent.attribute').");
         }
 
-        String parentHeader = externalHeaders.get(0);
-        ExternalAttribute parentAttr = ExternalAttribute.parseExternalAttribute(parentHeader);
+        Header parentHeader = externalHeaders.get(0);
 
         // Raccogli tutti i valori unici dell’attributo genitore
         Set<String> parentValues = extractValuesForHeader(sheetData, parentHeader);
@@ -44,8 +46,8 @@ public class CompositionParser extends ExternalAttributeResolverParser {
         // Raccogli riferimenti esterni secondari (tutti tranne il parentHeader)
         Set<String> skipHeaders = new HashSet<>();
         skipHeaders.add(parentHeader);
-        Map<ExternalAttribute, Set<String>> secondaryExternalAttrToValues =
-                collectExternalAttributes(sheetData.getHeaders(), sheetData.getRows(), skipHeaders);
+        Map<ExternalAttribute, Set<String>> secondaryExternalAttrToValues
+                = collectExternalAttributes(sheetData.getHeaders(), sheetData.getRows(), skipHeaders);
 
         // Risolvi anche questi in batch, come in MainDependentParser
         resolveAllExternalAttributesBatched(secondaryExternalAttrToValues, queryBuilder, graphQLService);
@@ -54,24 +56,22 @@ public class CompositionParser extends ExternalAttributeResolverParser {
         return buildCompositionMutations(sheetData, compositionName, parentHeader, parentAttr, mutationBuilder);
     }
 
-    private void validateHeaders(ExcelSheetData sheetData) {
+    private void validateHeaders(DataSheet sheetData) {
         if (sheetData.getHeaders().isEmpty()) {
-            throw new IllegalArgumentException("Composition sheet '" + sheetData.getSheetName() + "' must have headers.");
+            throw new IllegalArgumentException("Composition sheet '" + sheetData.getName() + "' must have headers.");
         }
     }
 
-    private Set<String> extractValuesForHeader(ExcelSheetData sheetData, String header) {
+    private Set<String> extractValuesForHeader(DataSheet sheetData, Header header) {
         Set<String> values = new LinkedHashSet<>();
         int index = sheetData.getHeaders().indexOf(header);
         if (index < 0) {
             return values;
         }
-        for (List<String> row : sheetData.getRows()) {
-            if (index < row.size()) {
-                String value = row.get(index);
-                if (value != null && !value.isEmpty()) {
-                    values.add(value);
-                }
+        for (DataRow row : sheetData.getDataRows()) {
+            DataCell cell = row.get(index);
+            if (cell != null && !cell.isBlank()) {
+                values.add(cell.getFormattedValue());
             }
         }
         return values;

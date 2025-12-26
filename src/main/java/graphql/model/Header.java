@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package v2.beans;
+package graphql.model;
 
 /**
  *
@@ -11,10 +11,19 @@ package v2.beans;
  */
 public class Header {
 
+    private static final String FORCE_QUOTATION_PREFIX = "§";
+    private static final String EXT_REF_PREFIX = "*";
     private final String header;
 
+    // quando scorro tutti i valori, se uno solo è un decimale allora forzo l'uso delle vergolette anche se uno di loro è intero
+    private boolean inferredQuotations = false;
+
     public Header(String header) {
-        this.header = header;
+        this.header = header.replace(EXT_REF_PREFIX, "");
+    }
+
+    public void setInferredQuotations(boolean inferredQuotations) {
+        this.inferredQuotations = inferredQuotations;
     }
 
     public String getHeader() {
@@ -29,8 +38,12 @@ public class Header {
         return decapitalize(header.split("\\.")[0]) + "_";
     }
 
+    public boolean isInferredQuotations() {
+        return inferredQuotations;
+    }
+
     public boolean isForcedQuotations() {
-        return header.startsWith("§");
+        return header.startsWith(FORCE_QUOTATION_PREFIX);
     }
 
     public String roleName() {
@@ -53,6 +66,10 @@ public class Header {
             return input;
         }
         return input.substring(0, 1).toLowerCase() + input.substring(1);
+    }
+
+    public String getAttributeName() {
+        return header.replace(FORCE_QUOTATION_PREFIX, "");
     }
 
 }

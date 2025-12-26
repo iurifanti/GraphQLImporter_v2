@@ -1,21 +1,21 @@
 package graphql.parser;
 
-import graphql.excel.ExcelSheetData;
 import graphql.graphql.GraphQLMutationBuilder;
 import graphql.graphql.GraphQLQueryBuilder;
 import graphql.graphql.GraphQLService;
+import graphql.model.DataSheet;
 import java.util.*;
 
 public class MainDependentParser extends ExternalAttributeResolverParser {
 
     @Override
     public List<String> parseAndGenerateMutations(
-            ExcelSheetData sheetData,
+            DataSheet sheetData,
             GraphQLMutationBuilder mutationBuilder,
             GraphQLQueryBuilder queryBuilder,
             GraphQLService graphQLService
     ) throws Exception {
-        String objectName = sheetData.getSheetName();
+        String objectName = sheetData.getName();
         List<List<String>> rows = sheetData.getRows();
         List<String> headers = sheetData.getHeaders();
 
@@ -34,7 +34,7 @@ public class MainDependentParser extends ExternalAttributeResolverParser {
         for (List<String> row : rows) {
             Map<String, String> attributes = resolveRowAttributes(headers, row);
             if (!attributes.isEmpty()) {
-                String mutation = mutationBuilder.buildCreateMutation(objectName, attributes);
+                String mutation = mutationBuilder.buildMainCreateMutation(objectName, attributes);
                 mutations.add(mutation);
             }
         }

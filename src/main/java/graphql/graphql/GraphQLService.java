@@ -2,18 +2,14 @@ package graphql.graphql;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import graphql.util.Constants;
 import graphql.util.LoggerUI;
-import graphql.util.SslBypass;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.util.Base64;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -22,10 +18,12 @@ import java.util.Optional;
  */
 public class GraphQLService {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    
     public final String primaryEndpoint;
     public final String secondaryEndpoint;
     private final String basicAuthHeader;
+    private String user;
+    private String pass;
 
     /**
      * Costruttore che istanzia i client con autenticazione base.
@@ -38,9 +36,26 @@ public class GraphQLService {
     public GraphQLService(String primaryEndpoint, String secondaryEndpoint, String username, String password) {
         this.primaryEndpoint = primaryEndpoint;
         this.secondaryEndpoint = secondaryEndpoint;
+        this.user = username;
+        this.pass = password;
         String auth = username + ":" + password;
         this.basicAuthHeader = "Basic " + Base64.getEncoder().encodeToString(auth.getBytes());
-        SslBypass.disableSslVerificationIfNeeded();
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public String getPass() {
+        return pass;
+    }
+
+    public void setPass(String pass) {
+        this.pass = pass;
     }
 
     /**
@@ -50,22 +65,28 @@ public class GraphQLService {
      * logga l'errore in maniera human readable e lancia una RuntimeException
      * interrompendo l'esecuzione.
      */
-    public Optional<String> executeQueryWithFallback(String query) throws IOException {
+    public Optional<String> executeQueryWithFallback(String query) throws Exception {
         try {
             LoggerUI.log("\n[GraphQL] Eseguo query sull'endpoint primario: " + primaryEndpoint);
             LoggerUI.log("[GraphQL] Query:\n" + query);
             Optional<String> response = executeQuery(query, primaryEndpoint);
             String endpointUsed = primaryEndpoint;
-            if (response.isPresent() && containsUndefinedQueryError(response.get()) && secondaryEndpoint!=null) {
-                LoggerUI.log("Primary endpoint failed with 'Query is undefined', retrying secondary endpoint.");
-                LoggerUI.log("[GraphQL] Eseguo query sull'endpoint secondario: " + secondaryEndpoint);
-                LoggerUI.log("[GraphQL] Query:\n" + query);
-                response = executeQuery(query, secondaryEndpoint);
-                endpointUsed = secondaryEndpoint;
-                boolean onlyWarnings = isOnlyWarnings(response.get());
-                logGraphQLErrors(response.get(), secondaryEndpoint);
-                if (!onlyWarnings && containsUndefinedQueryError(response.get())) {
+            if (response.isPresent() && containsUndefinedQueryError(response.get())) {
+                LoggerUI.log("[GraphQL] Chiamata fallita conerrore 'Query is undefined'.");
+                if (secondaryEndpoint != null) {
+                    LoggerUI.log("[GraphQL] Eseguo query sull'endpoint secondario: " + secondaryEndpoint);
+                    LoggerUI.log("[GraphQL] Query:\n" + query);
+                    response = executeQuery(query, secondaryEndpoint);
+                    endpointUsed = secondaryEndpoint;
+                    boolean onlyWarnings = isOnlyWarnings(response.get());
+                    logGraphQLErrors(response.get(), secondaryEndpoint);
+                    if (!onlyWarnings && containsUndefinedQueryError(response.get())) {
+                        throw new RuntimeException("[GraphQL] Errore GraphQL nella query: vedi dettagli sopra.");
+                    }
+                } else {
+                    LoggerUI.log("[GraphQL] Nessun endpoint secondario su cui riprovare");
                     throw new RuntimeException("Errore GraphQL nella query: vedi dettagli sopra.");
+
                 }
             } else if (response.isPresent() && containsGraphQLErrors(response.get())) {
                 logGraphQLErrors(response.get(), primaryEndpoint);
@@ -73,6 +94,7 @@ public class GraphQLService {
                 throw new RuntimeException("Errore GraphQL nella query: vedi dettagli sopra.");
             }
             if (response.isPresent()) {
+                LoggerUI.log("jsonResponse: " + response.get());
                 logGraphQLErrors(response.get(), endpointUsed);
             }
             return response;
@@ -102,41 +124,7 @@ public class GraphQLService {
         return false; // fallback: considera errore vero
     }
 
-    /**
-     * Estrae una mappa chiave-valore dal JSON di risposta dove chiave=primo
-     * campo di ogni item, valore=campo "_id".
-     */
-    public Map<String, String> extractIdFromResponse(String jsonResponse, String attributeName) throws IOException {
-        JsonNode rootNode = objectMapper.readTree(jsonResponse);
-        JsonNode dataNode = rootNode.path("data");
-        Map<String, String> res = new LinkedHashMap<>();
-        if (dataNode != null && dataNode.isObject()) {
-            JsonNode dynamicNode = dataNode.elements().hasNext() ? dataNode.elements().next() : null;
-            if (dynamicNode != null) {
-                JsonNode itemsNode = dynamicNode.path("items");
-                if (itemsNode.isArray()) {
-                    for (JsonNode item : itemsNode) {
-                        String key = null;
-                        for (Iterator<Map.Entry<String, JsonNode>> fields = item.fields(); fields.hasNext();) {
-                            Map.Entry<String, JsonNode> f = fields.next();
-                            if (attributeName.equals(f.getKey())) {
-                                key = f.getValue().asText();
-                                break;
-                            }
-                        }
-                        JsonNode idNode = item.get(Constants.ID);
-                        if (key != null && idNode != null && idNode.isTextual()) {
-                            res.put(key, idNode.asText());
-                        }
-                    }
-                }
-            }
-        }
-        return res;
-    }
-
     private boolean containsUndefinedQueryError(String jsonResponse) {
-        LoggerUI.log("jsonResponse: " + jsonResponse);
         return jsonResponse != null && jsonResponse.contains("\\u0027Query\\u0027 is undefined @");
     }
 
@@ -187,8 +175,8 @@ public class GraphQLService {
         }
     }
 
-    private Optional<String> executeQuery(String query, String endpoint) throws IOException {
-        URL url = new URL(endpoint);
+    private Optional<String> executeQuery(String query, String endpoint) throws Exception {
+        URL url = new URI(endpoint).toURL();
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
@@ -212,8 +200,8 @@ public class GraphQLService {
         }
         return Optional.of(response.toString());
     }
-    // Utility per escape della query
 
+    // Utility per escape della query
     private static String toJsonString(String s) {
         return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"";
     }

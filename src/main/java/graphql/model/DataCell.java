@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package v2.beans;
+package graphql.model;
 
 import common.Utils;
 import java.math.BigDecimal;
@@ -48,7 +48,7 @@ public class DataCell {
         return cell.getCellType() == CellType.BOOLEAN;
     }
 
-    private boolean quotationMarksNeeded() {
+    public boolean quotationMarksNeeded() {
         return header.isForcedQuotations() || (!isInteger() && !isBoolean());
     }
 
@@ -61,6 +61,10 @@ public class DataCell {
             formattedValue = "\"" + formattedValue + "\"";
         }
         return formattedValue;
+    }
+
+    public boolean isBlank() {
+        return cell.getCellType() == CellType.BLANK || Utils.isBlank(value);
     }
 
 }

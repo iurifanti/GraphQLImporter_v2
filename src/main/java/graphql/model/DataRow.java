@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package v2.beans;
+package graphql.model;
 
 import java.util.List;
 import java.util.Objects;
@@ -13,7 +13,7 @@ import java.util.Objects;
  * @author iurif
  */
 public class DataRow {
-    
+
     private final List<DataCell> dataCells;
 
     public DataRow(List<DataCell> dataCells) {
@@ -22,5 +22,9 @@ public class DataRow {
 
     public List<DataCell> getDataCells() {
         return dataCells;
+    }
+
+    public DataCell get(int index) {
+        return dataCells.get(index);
     }
 }

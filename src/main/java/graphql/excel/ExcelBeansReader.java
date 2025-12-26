@@ -1,4 +1,4 @@
-package v2;
+package graphql.excel;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -13,11 +13,11 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import v2.beans.DataCell;
-import v2.beans.DataFile;
-import v2.beans.DataRow;
-import v2.beans.DataSheet;
-import v2.beans.Header;
+import graphql.model.DataCell;
+import graphql.model.DataFile;
+import graphql.model.DataRow;
+import graphql.model.DataSheet;
+import graphql.model.Header;
 
 public class ExcelBeansReader {
 
@@ -55,7 +55,11 @@ public class ExcelBeansReader {
                     if (cell != null) {
                         Header header = i < headers.size() ? headers.get(i) : new Header("");
                         String value = readCellAsString(cell, evaluator);
-                        cells.add(new DataCell(header, cell, value));
+                        DataCell dataCell = new DataCell(header, cell, value);
+                        cells.add(dataCell);
+                        if (!header.isForcedQuotations() && !header.isInferredQuotations()) {
+                            header.setInferredQuotations(dataCell.quotationMarksNeeded());
+                        }
                     }
                 }
                 dataRows.add(new DataRow(cells));

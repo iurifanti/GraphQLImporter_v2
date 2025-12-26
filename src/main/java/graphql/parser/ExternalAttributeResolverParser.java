@@ -1,10 +1,11 @@
 package graphql.parser;
 
+import common.Utils;
 import graphql.graphql.GraphQLQueryBuilder;
 import graphql.graphql.GraphQLService;
 import graphql.util.Constants;
+import graphql.util.JsonUtils;
 import graphql.util.LoggerUI;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -12,6 +13,13 @@ public abstract class ExternalAttributeResolverParser implements DataParser {
 
     protected static final int BATCH_SIZE = 1000;
     protected final Map<String, String> attr2id = new LinkedHashMap<>();
+    private GraphQLQueryBuilder queryBuilder;
+    private GraphQLService graphQLService;
+
+    public ExternalAttributeResolverParser(GraphQLQueryBuilder queryBuilder, GraphQLService graphQLService) {
+        this.queryBuilder = queryBuilder;
+        this.graphQLService = graphQLService;
+    }
 
     protected Map<ExternalAttribute, Set<String>> collectExternalAttributes(
             List<String> headers, List<List<String>> rows, Set<String> skipHeaders
@@ -44,7 +52,7 @@ public abstract class ExternalAttributeResolverParser implements DataParser {
             Map<ExternalAttribute, Set<String>> attributesToResolve,
             GraphQLQueryBuilder queryBuilder,
             GraphQLService graphQLService
-    ) {
+    ) throws Exception {
         for (Map.Entry<ExternalAttribute, Set<String>> entry : attributesToResolve.entrySet()) {
             ExternalAttribute extAttr = entry.getKey();
             Set<String> values = entry.getValue();
@@ -74,22 +82,37 @@ public abstract class ExternalAttributeResolverParser implements DataParser {
         return className + attribute + val;
     }
 
-    public static Map<String, String> getIds(
-            GraphQLQueryBuilder queryBuilder,
-            GraphQLService graphQLService,
+    public Map<String, String> getIds(
             String objectName,
             String attributeName,
             Set<String> valuesToQuery
-    ) {
-        String query = queryBuilder.buildGetIdQuery(objectName, attributeName, valuesToQuery);
+    ) throws Exception {
 
-        Optional<String> response;
+        List<String> batchedQueries = queryBuilder.buildGetIdQuery(objectName, attributeName, valuesToQuery);
         int size = valuesToQuery.size();
-        LoggerUI.log("Retrieving values for " + size + " external object" + (size > 1 ? "s" : "") + (size > 500 ? " (might take some seconds)" : "") + "...");
+        LoggerUI.log("Retrieving values for " + size + " external object" + (size > 1 ? "s" : "") + "...");
+        Map<String, String> value2id = new LinkedHashMap();
+        List<String> duplicati = new LinkedList<>();
+        for (String query : batchedQueries) {
+            getIdsBatch(query).forEach((k, v) -> {
+                String prev = value2id.put(k, v);
+                if (prev != null) {
+                    duplicati.add(k);
+                }
+            });
+        }
+        if (!duplicati.isEmpty()) {
+            throw new RuntimeException("Sono presenti duplicati per i seguenti valori: " + Utils.join(duplicati, ", "));
+        }
+        return value2id;
+    }
+
+    private Map<String, String> getIdsBatch(String query) throws Exception {
+        Optional<String> response;
 
         try {
             response = graphQLService.executeQueryWithFallback(query);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Error executing GraphQL query for dependent ID: " + e.getMessage(), e);
         }
 
@@ -98,31 +121,14 @@ public abstract class ExternalAttributeResolverParser implements DataParser {
         }
         Map<String, String> val2id;
         try {
-            val2id = graphQLService.extractIdFromResponse(response.get(), attributeName);
-            LoggerUI.log("val2id: " + val2id);
+            val2id = JsonUtils.value2id(response.get());
+
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error during ID extraction: " + e.getMessage(), e);
         }
         return val2id;
-    }
-
-    public static String getId(
-            GraphQLQueryBuilder queryBuilder,
-            GraphQLService graphQLService,
-            String objectName,
-            String attributeName,
-            String value
-    ) {
-        Map<String, String> key2val = getIds(queryBuilder, graphQLService, objectName, attributeName, Collections.singleton(value));
-        if (key2val.isEmpty()) {
-            throw new RuntimeException("Nessun valore trovato in " + objectName + " per " + attributeName + "='" + value + "'");
-        }
-        if (key2val.size() > 1) {
-            throw new RuntimeException("Valori multipli in " + objectName + " per " + attributeName + "='" + value + "'");
-        }
-        return key2val.entrySet().stream().findFirst().get().getValue();
     }
 
 }

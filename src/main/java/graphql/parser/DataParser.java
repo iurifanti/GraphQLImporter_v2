@@ -1,9 +1,9 @@
 package graphql.parser;
 
-import graphql.excel.ExcelSheetData;
 import graphql.graphql.GraphQLMutationBuilder;
 import graphql.graphql.GraphQLQueryBuilder;
 import graphql.graphql.GraphQLService;
+import graphql.model.DataSheet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ public interface DataParser {
      * @throws Exception if an error occurs during parsing or ID retrieval.
      */
     public List<String> parseAndGenerateMutations(
-            ExcelSheetData sheetData,
+            DataSheet sheetData,
             GraphQLMutationBuilder mutationBuilder,
             GraphQLQueryBuilder queryBuilder,
             GraphQLService graphQLService) throws Exception;

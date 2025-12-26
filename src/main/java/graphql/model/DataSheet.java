@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package v2.beans;
+package graphql.model;
 
 import java.util.List;
 import java.util.Objects;
@@ -17,6 +17,8 @@ public class DataSheet {
     private final String name;
     private final List<Header> headers;
     private final List<DataRow> dataRows;
+
+    private static final String COMPOSITION_PREFIX = "#";
 
     public DataSheet(String name, List<Header> headers, List<DataRow> dataRows) {
         this.name = Objects.requireNonNull(name, "name");
@@ -37,6 +39,10 @@ public class DataSheet {
     }
 
     public boolean isComposition() {
-        return name.startsWith("#");
+        return name.startsWith(COMPOSITION_PREFIX);
+    }
+
+    public String getRoleName() {
+        return name.replace(COMPOSITION_PREFIX, "");
     }
 }
